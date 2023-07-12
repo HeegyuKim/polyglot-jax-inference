@@ -41,6 +41,7 @@ class Attention(nn.Module):
         q, k, v = self.wq(x), self.wk(x), self.wv(x)
         k = self.update_cache("k", k)
         v = self.update_cache("v", v)
+        print(q.shape, k.shape, v.shape)
 
         q_rot = self.apply_rotary_embedding(q[..., : self.rotary])
         k_rot = self.apply_rotary_embedding(k[..., : self.rotary])
@@ -50,6 +51,7 @@ class Attention(nn.Module):
 
         p = jnp.einsum("bqhd,bkhd->bhqk", q, k) / k.shape[3] ** 0.5
         x = jnp.einsum("bhqk,bkhd->bqhd", nn.softmax(p + attn_bias, axis=3), v)
+        print(x.shape)
         return self.wo(x)
 
 
