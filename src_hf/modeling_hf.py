@@ -55,7 +55,10 @@ class GPTNeoXAttention(nn.Module):
         k = jnp.concatenate((k_rot, k[..., self.rotary :]), axis=3)
 
         p = jnp.einsum("bqhd,bkhd->bhqk", q, k) / k.shape[3] ** 0.5
-        x = jnp.einsum("bhqk,bkhd->bqhd", nn.softmax(p + attn_bias, axis=3), v)
+        # print(p.shape, attn_bias.shape)
+        attn_w = nn.softmax(p + attn_bias, axis=3)
+        jax.debug.print(str(attn_w) + "attn_w={w}", w=attn_w)
+        x = jnp.einsum("bhqk,bkhd->bqhd", attn_w, v)
         x = x.reshape(x.shape[:2] + (-1,))
         return self.dense(x)
 
@@ -140,7 +143,6 @@ class GPTNeoXModel(nn.Module):
         attn_bias = jnp.repeat(mask[:, None, None, :], x.shape[1], axis=2)
         attn_bias = jnp.tril(attn_bias, k=attn_bias.shape[3] - attn_bias.shape[2])
         attn_bias = -1e9 * (1 - attn_bias.astype(jnp.bfloat16))
-
         x = self.embed_in(x)
         x = self.layers(x, attn_bias)
         return self.final_layer_norm(x)
